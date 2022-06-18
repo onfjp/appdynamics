@@ -12,53 +12,23 @@ import xmltodict
 
 urllib3.disable_warnings()
 
-def consolidarInfo():
-    nomeApp = ""
-    conteudo = ""
-    callsTotal = ""
-
-    configuracao = lerConfig()
-
-    for config in configuracao:
-        controller = config['Controller']
-        auth = config['Token']
-        token = {'Authorization': 'Bearer %s'%(auth)}
-
-        val_proxy = {
-            'http': '',
-            'https': ''
-            }
-
-        ## OBTER A LISTA DE TODAS APLICAÇÕES DO APPDYNAMICS
-
-        print("Obtendo lista de aplicações")
-        obter_aplicacoes = obterApps(controller, token, val_proxy)
-        status = obter_aplicacoes[1]
-
-        if status == 200:
-            ## OBTER INFORMAÇÕES REFERENTE A MÉTRICA CALL PER MINUTE
-            for todas_apps in obter_aplicacoes[0]:
-                nomeApp = todas_apps['name']
-                ids = todas_apps['id']               
-
-                #idTexto = str(ids)
-
-                metrica = obterMetrica(controller, nomeApp, token, val_proxy)
-
-                if metrica == None:
-                    print("Aplicação sem métricas!")
-                else:
-                    nomeMetrica = metrica['metric-data']['metricName']
-
-                    if nomeMetrica != "METRIC DATA NOT FOUND":
-                        callsTotal = metrica['metric-data']['metricValues']['metric-value']['sum']
-                        if callsTotal != "0":
-                            print("Obtendo métrica da aplicação:"+nomeApp)  
-                            conteudo = [controller,nomeApp,callsTotal]
-                            exportarCsv(conteudo)
-
-        else:
-              print("Algo deu errado!")   
+def obterNodesviaTier(controller, token, app, tier):
+    url = "/rest/applications/*eapp+"/tiers/"+tier+"/nodes/Poutput=JSON"
+    urlnodes = (controller + url)
+    reqnodes = requests.get (url = urlnodes, verify = False, headers = token)
+    nodes = json.loads(regnodes.content)
+    if nodes == None:
+        print ("Sem informacao de node")
+    else:
+        return nodes
+    
+def obterBT(controller, token, app):
+    url = "/rest/applications/*tapp+"/business-transactions?output-JSON"
+    urlbt = (controller + url)
+    regnodes = requests.get(url = urlbt, verify = False, headers = token)
+    bt = json. loads (regnodes. content)
+    return bt
+                            
 
 def exportarCsv(resultado):
     with open('relAppDy.csv', 'a', newline='') as f:
@@ -68,6 +38,15 @@ def exportarCsv(resultado):
 def lerConfig():
     with open('config.json', 'r') as file:
         return json.load(file)
+    
+def dispConfig():
+    configuracao = lerConfig()
+    for config in configuracao:
+        controller = config['Controller']
+        auth = config['Token']
+        token = {'Authorization': 'Bearer %s'%(auth)}
+        
+        return controller, token
 
 def obterApps(controller, token, proxy,  app = "All"):
     if app == "All":
@@ -78,9 +57,11 @@ def obterApps(controller, token, proxy,  app = "All"):
     urlCompleta = (controller + api)
     req = requests.get(url = urlCompleta , verify = False, headers = token, proxies = proxy)
     status = req.status_code  
-
-    dados = json.loads(req.content)
-    return dados, status
+    if status == 200
+        dados = json.loads(req.content)
+    else:
+        print("Erro para obter aplicações")
+    return dados
     
 def obterMetrica(controller, nomeApp, token, proxy ):
 
@@ -143,8 +124,3 @@ def ExportarDash(controller, token, proxy, idD):
     reqHel = requests.get(url = urlHel, verify = False, headers = token, proxies = proxy)
     dashboard = json.loads(reqHel.content)
     return dashboard
-
-if __name__ == '__main__':
-    #header = "controller,aplicação,calls"
-    #exportarCsv(header)
-    consolidarInfo()
